@@ -11,13 +11,11 @@ const { authenticationToken } = require("./utilities"); // you need to implement
 
 const app = express();
 
-// Connect to MongoDB
 mongoose
   .connect(config.connectionString)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Middleware
 app.use(express.json());
 app.use(
   cors({
@@ -26,7 +24,6 @@ app.use(
   })
 );
 
-// Routes
 app.get("/", (req, res) => {
   res.json({ data: "hello" });
 });
@@ -104,7 +101,7 @@ app.post("/login", async (req, res) => {
         fullname: user.fullname,
         email: user.email,
       },
-      token,
+      accessToken:token,
     });
   } catch (err) {
     console.error(err);
@@ -121,7 +118,7 @@ app.get("/get-user", authenticationToken, async (req, res) => {
 
     res.json({
       success: true,
-      user,
+      user:user,
     });
   } catch (err) {
     console.error(err);
@@ -193,7 +190,7 @@ app.get("/get-all-notes", authenticationToken, async (req, res) => {
     res.json({
       success: true,
       count: notes.length,
-      notes,
+      notes:notes,
     });
   } catch (err) {
     console.error(err);
@@ -244,6 +241,41 @@ app.patch("/update-note-pinned/:noteId", authenticationToken, async (req, res) =
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+app.get("/search-notes", authenticationToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+    const regex = new RegExp(query, "i");
+
+    const notes = await Note.find({
+      userId,
+      $or: [
+        { title: regex },
+        { content: regex },
+        { tags: regex }, 
+      ],
+    }).sort({ isPinned: -1, createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: notes.length,
+      notes,
+    });
+  } catch (err) {
+    console.error("Error in /search-notes:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 
 app.listen(3000, () => {
   console.log("🚀 Server running on http://localhost:3000");

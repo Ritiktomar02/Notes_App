@@ -1,18 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import Navbar from "../../components/Navbar/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import PasswordInput from "../../components/Input/PasswordInput";
 import { validateEmail } from "../../utils/helper";
+import axiosinstance from "../../utils/axiosInstances";
+
 const Signup = () => {
-  const [name,setname]=useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handlesignup = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
-     if (!name) {
+    // Validation
+    if (!name.trim()) {
       setError("Please enter your name");
       return;
     }
@@ -22,12 +26,30 @@ const Signup = () => {
       return;
     }
 
-    if (!password) {
+    if (!password.trim()) {
       setError("Please enter a password.");
       return;
     }
 
     setError("");
+
+    try {
+      const res = await axiosinstance.post("/create-account", {
+        fullname: name,
+        email: email,
+        password: password,
+      });
+
+      if (res.data) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("An unexpected error has occurred. Please try again.");
+      }
+    }
   };
 
   return (
@@ -35,7 +57,7 @@ const Signup = () => {
       <Navbar />
       <div className="flex items-center justify-center mt-28">
         <div className="w-96 drop-shadow rounded bg-white px-7 py-10">
-          <form onSubmit={handlesignup}>
+          <form onSubmit={handleSignup}>
             <h4 className="text-2xl mb-7">Signup</h4>
 
             <input
@@ -43,7 +65,7 @@ const Signup = () => {
               placeholder="Name"
               className="input-box"
               value={name}
-              onChange={(e) => setname(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
             />
 
             <input
@@ -59,9 +81,7 @@ const Signup = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            {error && (
-              <p className="text-red-500 text-xs pb-1">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs pb-1">{error}</p>}
 
             <button className="btn-primary" type="submit">
               Signup
@@ -70,7 +90,7 @@ const Signup = () => {
             <p className="text-sm text-center mt-4">
               Already have an account?{" "}
               <Link
-                to={"/login"}
+                to="/login"
                 className="font-medium text-[#2B85FF] underline"
               >
                 Login
@@ -83,4 +103,4 @@ const Signup = () => {
   );
 };
 
-export default Signup
+export default Signup;
